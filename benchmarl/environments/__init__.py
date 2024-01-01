@@ -45,6 +45,7 @@ from .vmas.simple_tag import TaskConfig as VmasSimpleTagConfig
 from .vmas.simple_world_comm import TaskConfig as VmasSimpleWorldComm
 from .vmas.transport import TaskConfig as TransportConfig
 from .vmas.wheel import TaskConfig as WheelConfig
+from .vmas.dropout import TaskConfig as DropoutConfig
 
 
 # This is a registry mapping task config schemas names to their python dataclass
@@ -57,6 +58,7 @@ _task_class_registry = {
     "vmas_navigation_config": NavigationConfig,
     "vmas_transport_config": TransportConfig,
     "vmas_wheel_config": WheelConfig,
+    "vmas_dropout_config": DropoutConfig,
     "vmas_simple_adversary_config": VmasSimpleAdversaryConfig,
     "vmas_simple_crypto_config": VmasSimpleCryptoConfig,
     "vmas_simple_push_config": VmasSimplePushConfig,

@@ -4,7 +4,7 @@ defaults:
 
 
 
-share_param_critic: True
+share_param_critic: False #True
 clip_epsilon: 0.2
 entropy_coef: 0.0
 critic_coef: 1.0

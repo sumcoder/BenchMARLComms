@@ -22,6 +22,7 @@ class VmasTask(Task):
     NAVIGATION = None
     TRANSPORT = None
     WHEEL = None
+    DROPOUT = None
     SIMPLE_ADVERSARY = None
     SIMPLE_CRYPTO = None
     SIMPLE_PUSH = None
