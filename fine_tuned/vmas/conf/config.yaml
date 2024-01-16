@@ -2,7 +2,7 @@ defaults:
   - experiment: base_experiment
   - algorithm: ???
   - task: ???
-  - model: layers/mlp
+  - model: layers/gnn
   - model@critic_model: layers/mlp
   - _self_
 
@@ -18,7 +18,7 @@ experiment:
   sampling_device: "cuda"
   train_device: "cuda"
 
-  share_policy_params: True
+  share_policy_params: False #True
   prefer_continuous_actions: True
 
   gamma: 0.9
