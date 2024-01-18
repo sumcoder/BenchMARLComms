@@ -15,6 +15,7 @@ from torch import nn
 from torchrl.modules import MLP, MultiAgentMLP
 
 from benchmarl.models.common import Model, ModelConfig
+from benchmarl.models.discrete_vit import Transformer
 
 
 class Mlp(Model):
@@ -51,7 +52,11 @@ class Mlp(Model):
         self.input_features = self.input_leaf_spec.shape[-1]
         self.output_features = self.output_leaf_spec.shape[-1]
 
+        self.transformer = Transformer(0, dim=24, depth=1, heads=6, qk_dim=64, v_dim=64,
+                                       mlp_dim=1536, dropout=0)
+
         if self.input_has_agent_dim:
+            print("input has agent dim") 
             self.mlp = MultiAgentMLP(
                 n_agent_inputs=self.input_features,
                 n_agent_outputs=self.output_features,
@@ -62,6 +67,7 @@ class Mlp(Model):
                 **kwargs,
             )
         else:
+            print("input has no agent dim")
             self.mlp = nn.ModuleList(
                 [
                     MLP(
@@ -97,7 +103,11 @@ class Mlp(Model):
 
         # Has multi-agent input dimension
         if self.input_has_agent_dim:
-            res = self.mlp.forward(input)
+            # print("dimension and device of input: ", input.shape, input.get_device())
+            # adding a graph neural network to enable communications
+            aggregated_messages = (self.transformer(input))
+            res = self.mlp.forward(aggregated_messages)
+            # res = self.mlp.forward(input)
             if not self.output_has_agent_dim:
                 # If we are here the module is centralised and parameter shared.
                 # Thus the multi-agent dimension has been expanded,
