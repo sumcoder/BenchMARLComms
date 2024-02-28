@@ -102,4 +102,4 @@ class Transformer(nn.Module):
             #     self.bits_mat = info['bits_mat'].cpu().detach().numpy()
 
         # info = dict_merge(infos, mode="mean")
-        return x #, info
+        return x, info

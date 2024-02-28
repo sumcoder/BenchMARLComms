@@ -35,7 +35,7 @@ def component_log_loss(x, delta, reduction="mean"):
     #     out = loss[0, 0]  # 2D matrix
     if reduction == "none":
         return loss
-    return loss.mean(), loss.sum(1).squeeze()  # out.cpu()
+    return loss.mean()  # loss.sum(1).squeeze()  # out.cpu()
 
 
 class SoftmaxAttention(BaseAttention):
@@ -52,6 +52,8 @@ class SoftmaxAttention(BaseAttention):
         weights = self.softmax(dots)
         out = einsum("a b h i j, a b h j d -> a b h i d", weights, v)
 
+        info["k_reg_loss"], _ = component_log_loss(k, 2 * NOISE_WIDTH)
+
         # out = v
 
         return out, info
@@ -62,31 +64,30 @@ class NoisySoftmaxAttention(BaseAttention):
         super().__init__(*args, **kwargs)
         self.scale = self.qk_dim ** -0.5
         self.softmax = nn.Softmax(dim=-1)
+        print("==Entering Noisy channels!==")
 
     def dist_attend(self, q, k, v):
-        b, h, n, _ = q.shape
-        info = {}
-        info["k_reg_loss"], k_mat = component_log_loss(k, 2 * NOISE_WIDTH)
-        # print(k_mat.shape, "important key")
-        # print(k[0,0,0,:5])
-        k = k + torch_uniform_like(k, NOISE_WIDTH)
+        a, b, h, n, _ = k.shape
 
-        dots = einsum("b h i d, b h j d -> b h i j", q, k) * self.scale
+        info = {}
+        info["k_reg_loss"] = component_log_loss(k, 2 * NOISE_WIDTH)
+        # k = k + torch_uniform_like(k, NOISE_WIDTH)
+
+        dots = einsum("a b h i d, a b h j d -> a b h i j", q, k) * self.scale
         weights = self.softmax(dots)
 
-        wv = einsum("b h i j, b h j d -> b h i j d", weights, v)
-        # print(wv[0,0,0,0,:5])
-        info["wv_reg_loss"], wv_mat = component_log_loss(wv, 2 * NOISE_WIDTH)
-        # print(info['wv_mat'].shape, "important wv")
+        wv = einsum("a b h i j, a b h j d -> a b h i j d", weights, v)
 
-        repeat_shape = len(k_mat.shape)
-        if repeat_shape == 2:
-            rep = [1, n, 1]
-        else:
-            rep = [n, 1]
+        info["wv_reg_loss"] = 12 #component_log_loss(wv, 2 * NOISE_WIDTH)
+
+        # repeat_shape = len(k_mat.shape)
+        # if repeat_shape == 2:
+        #     rep = [1, n, 1]
+        # else:
+        #     rep = [n, 1]
         # info['bits_mat'] = (k_mat.unsqueeze(-2).repeat(*rep) + wv_mat)#.cpu().detach().numpy()
 
-        wv = wv + torch_uniform_like(wv, NOISE_WIDTH)
+        # wv = wv + torch_uniform_like(wv, NOISE_WIDTH)
         out = wv.sum(-2)
 
         return out, info

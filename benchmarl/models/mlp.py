@@ -17,6 +17,7 @@ from torchrl.modules import MLP, MultiAgentMLP
 from benchmarl.models.common import Model, ModelConfig
 from benchmarl.models.discrete_vit import Transformer
 
+import threading
 
 class Mlp(Model):
     """Multi layer perceptron model.
@@ -52,7 +53,8 @@ class Mlp(Model):
         self.input_features = self.input_leaf_spec.shape[-1]
         self.output_features = self.output_leaf_spec.shape[-1]
 
-        self.transformer = Transformer(0, dim=24, depth=1, heads=6, qk_dim=64, v_dim=64,
+        dim = 2 * (self.n_agents - 1) + 4 + 12  # 4 is for agent own pos and vel, 12 is sensor const
+        self.transformer = Transformer(0.001, dim=dim, depth=1, heads=6, qk_dim=64, v_dim=64,
                                        mlp_dim=1536, dropout=0)
 
         if self.input_has_agent_dim:
@@ -80,6 +82,7 @@ class Mlp(Model):
                 ]
             )
 
+
     def _perform_checks(self):
         super()._perform_checks()
 
@@ -97,15 +100,15 @@ class Mlp(Model):
                 " the second to last spec dimension should be the number of agents"
             )
 
+
     def _forward(self, tensordict: TensorDictBase) -> TensorDictBase:
         # Gather in_key
         input = tensordict.get(self.in_key)
 
         # Has multi-agent input dimension
         if self.input_has_agent_dim:
-            # print("dimension and device of input: ", input.shape, input.get_device())
             # adding a graph neural network to enable communications
-            aggregated_messages = (self.transformer(input))
+            aggregated_messages, info = (self.transformer(input))
             res = self.mlp.forward(aggregated_messages)
             # res = self.mlp.forward(input)
             if not self.output_has_agent_dim:
@@ -124,7 +127,15 @@ class Mlp(Model):
             else:
                 res = self.mlp[0](input)
 
-        tensordict.set(self.out_key, res)
+        num_bits = torch.zeros_like(res)
+        # print(res.shape)
+        num_bits[...,0,0] = info['k_reg_loss']
+        if num_bits.shape[-1] == 1:
+            num_bits[...,0,1,0] = info['wv_reg_loss']
+        else:
+            num_bits[..., 0, 1] = info['wv_reg_loss']
+        tensordict.set(self.out_key, res)  # TODO: add num bits here and debug backwards
+        tensordict.set('bits', num_bits)
         return tensordict
 
 

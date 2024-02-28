@@ -27,6 +27,8 @@ from tqdm import tqdm
 
 from benchmarl.algorithms.common import AlgorithmConfig
 from benchmarl.environments import Task
+from benchmarl.experiment.CommsCallback import CommsCallback
+from benchmarl.experiment.CommsLogger import CommsLogger
 from benchmarl.experiment.callback import Callback, CallbackNotifier
 from benchmarl.experiment.logger import Logger
 from benchmarl.models.common import ModelConfig
@@ -306,10 +308,11 @@ class Experiment(CallbackNotifier):
         callbacks: Optional[List[Callback]] = None,
     ):
         super().__init__(
-            experiment=self, callbacks=callbacks if callbacks is not None else []
+            experiment=self, callbacks=callbacks if callbacks is not None else [CommsCallback(), CommsLogger()]
         )
 
         self.config = config
+        print("the call backs we get in experiement are ", callbacks)
 
         self.task = task
         self.model_config = model_config
@@ -638,6 +641,7 @@ class Experiment(CallbackNotifier):
         training_td = loss_vals.detach()
         loss_vals = self.algorithm.process_loss_vals(group, loss_vals)
 
+        # print("backwarding..")
         for loss_name, loss_value in loss_vals.items():
             if loss_name in self.optimizers[group].keys():
                 optimizer = self.optimizers[group][loss_name]
