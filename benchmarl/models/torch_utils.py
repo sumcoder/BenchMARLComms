@@ -1,5 +1,6 @@
 import math
 import torch
+import numpy as np
 import torch.nn.functional as F
 
 
@@ -10,7 +11,9 @@ def torch_uniform_like(x, width):
 
     This operation is differentiable with respect to `width`
     """
-    unit_sample = torch.rand_like(x)
+    # unit_sample = torch.rand_like(x)
+    unit_sample = np.random.randn(*x.shape)
+    unit_sample = torch.Tensor(unit_sample).to('cuda')
     sample = (unit_sample - 0.5) * 2 * width
     return sample
 

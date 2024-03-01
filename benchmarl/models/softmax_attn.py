@@ -43,6 +43,7 @@ class SoftmaxAttention(BaseAttention):
         super().__init__(*args, **kwargs)
         self.scale = self.qk_dim ** -0.5
         self.softmax = nn.Softmax(dim=-1)
+        print("Vanilla tx!")
 
     def dist_attend(self, q, k, v):
         info = {}
@@ -52,7 +53,8 @@ class SoftmaxAttention(BaseAttention):
         weights = self.softmax(dots)
         out = einsum("a b h i j, a b h j d -> a b h i d", weights, v)
 
-        info["k_reg_loss"], _ = component_log_loss(k, 2 * NOISE_WIDTH)
+        # info["k_reg_loss"] = component_log_loss(k, 2 * NOISE_WIDTH)
+        # info["wv_reg_loss"] = 6 #component_log_loss(k, 2 * NOISE_WIDTH)
 
         # out = v
 
@@ -71,12 +73,14 @@ class NoisySoftmaxAttention(BaseAttention):
 
         info = {}
         info["k_reg_loss"] = component_log_loss(k, 2 * NOISE_WIDTH)
-        # k = k + torch_uniform_like(k, NOISE_WIDTH)
+        k = k + torch_uniform_like(k, NOISE_WIDTH)
 
         dots = einsum("a b h i d, a b h j d -> a b h i j", q, k) * self.scale
         weights = self.softmax(dots)
 
-        wv = einsum("a b h i j, a b h j d -> a b h i j d", weights, v)
+        out = einsum("a b h i j, a b h j d -> a b h i d", weights, v)
+
+        # wv = einsum("a b h i j, a b h j d -> a b h i j d", weights, v)
 
         info["wv_reg_loss"] = 12 #component_log_loss(wv, 2 * NOISE_WIDTH)
 
@@ -88,6 +92,6 @@ class NoisySoftmaxAttention(BaseAttention):
         # info['bits_mat'] = (k_mat.unsqueeze(-2).repeat(*rep) + wv_mat)#.cpu().detach().numpy()
 
         # wv = wv + torch_uniform_like(wv, NOISE_WIDTH)
-        out = wv.sum(-2)
+        # out = wv.sum(-2)
 
         return out, info

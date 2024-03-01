@@ -25,7 +25,8 @@ class CommsCallback(Callback):
         # print(k, 'is comms loss and wv =',wv)
 
         b = k + wv
-        b.backward()
+        if b:
+            b.backward()
         # k.backward()
         # wv.backward()
 

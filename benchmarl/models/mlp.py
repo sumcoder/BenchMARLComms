@@ -129,11 +129,12 @@ class Mlp(Model):
 
         num_bits = torch.zeros_like(res)
         # print(res.shape)
-        num_bits[...,0,0] = info['k_reg_loss']
-        if num_bits.shape[-1] == 1:
-            num_bits[...,0,1,0] = info['wv_reg_loss']
-        else:
-            num_bits[..., 0, 1] = info['wv_reg_loss']
+        if info:
+            num_bits[...,0,0] = info['k_reg_loss']
+            if num_bits.shape[-1] == 1:
+                num_bits[...,0,1,0] = info['wv_reg_loss']
+            else:
+                num_bits[..., 0, 1] = info['wv_reg_loss']
         tensordict.set(self.out_key, res)  # TODO: add num bits here and debug backwards
         tensordict.set('bits', num_bits)
         return tensordict
